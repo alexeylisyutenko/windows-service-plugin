@@ -1,0 +1,27 @@
+plugins {
+    id 'groovy'
+    id 'java-gradle-plugin'
+    id 'maven-publish'
+}
+
+group 'com.github.alexeylisyutenko'
+version '1.0.0'
+
+gradlePlugin {
+    plugins {
+        windowsServicePlugin {
+            id = "com.github.alexeylisyutenko.windows-service-plugin"
+            implementationClass = "com.github.alexeylisyutenko.windowsserviceplugin.WindowsServicePlugin"
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            url uri('../repo')
+        }
+    }
+}
+
+
