@@ -1,11 +1,26 @@
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+    }
+    dependencies {
+        classpath "com.gradle.publish:plugin-publish-plugin:0.9.7"
+    }
+}
+
 plugins {
+    id 'com.gradle.plugin-publish' version '0.9.7'
     id 'groovy'
     id 'java-gradle-plugin'
-    id 'maven-publish'
+}
+
+repositories {
+    jcenter()
 }
 
 group 'com.github.alexeylisyutenko'
-version '1.0.0'
+version '1.0.1'
 
 gradlePlugin {
     plugins {
@@ -16,12 +31,16 @@ gradlePlugin {
     }
 }
 
-publishing {
-    repositories {
-        maven {
-            url uri('../repo')
+pluginBundle {
+    website = 'https://github.com/alexeylisyutenko/windows-service-plugin'
+    vcsUrl = 'https://github.com/alexeylisyutenko/windows-service-plugin'
+    description = 'Gradle plugin for wrapping java application as a windows service'
+    tags = ['windows', 'service', 'apache', 'commons', 'procrun', 'wrapper']
+
+    plugins {
+        windowsServicePlugin {
+            id = "com.github.alexeylisyutenko.windows-service-plugin"
+            displayName = 'Windows service plugin'
         }
     }
 }
-
-

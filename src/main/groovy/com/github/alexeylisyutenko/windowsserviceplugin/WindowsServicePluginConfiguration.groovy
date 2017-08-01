@@ -21,7 +21,7 @@ class WindowsServicePluginConfiguration {
      * Service executable architecture.
      */
     @Input
-    Architecture architecture = Architecture.X86
+    Architecture architecture = Architecture.AMD64
 
     /**
      * A service description.

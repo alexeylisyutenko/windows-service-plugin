@@ -35,7 +35,7 @@ buildscript {
     }
   }
   dependencies {
-    classpath "gradle.plugin.com.github.alexeylisyutenko:windows-service-plugin:1.0.0"
+    classpath "gradle.plugin.com.github.alexeylisyutenko:windows-service-plugin:1.0.1"
   }
 }
 
@@ -45,7 +45,7 @@ apply plugin: "com.github.alexeylisyutenko.windows-service-plugin"
 The same script snippet for new, incubating, plugin mechanism introduced in Gradle 2.1:
 ```
 plugins {
-  id "com.github.alexeylisyutenko.windows-service-plugin" version "1.0.0"
+  id "com.github.alexeylisyutenko.windows-service-plugin" version "1.0.1"
 }
 ```
     
