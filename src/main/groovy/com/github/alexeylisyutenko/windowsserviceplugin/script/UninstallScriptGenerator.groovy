@@ -29,8 +29,10 @@ class UninstallScriptGenerator {
         def reader = Utils.getResourceReader(this.getClass(), "uninstallScript.txt")
         def engine = new SimpleTemplateEngine()
         Template template = engine.createTemplate(reader)
-        Writer writer = new FileWriter(new File(outputDirectory, "${applicationName}-uninstall.bat"))
-        template.make(binding).writeTo(writer)
+
+        new File(outputDirectory, "${applicationName}-uninstall.bat").withWriter { writer ->
+            template.make(binding).writeTo(writer)
+        }
     }
 
 }

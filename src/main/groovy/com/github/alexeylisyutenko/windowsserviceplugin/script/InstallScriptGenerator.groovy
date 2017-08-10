@@ -41,8 +41,10 @@ class InstallScriptGenerator {
         def reader = Utils.getResourceReader(this.getClass(), "installScript.txt")
         def engine = new SimpleTemplateEngine()
         Template template = engine.createTemplate(reader)
-        Writer writer = new FileWriter(new File(outputDirectory, "${applicationName}-install.bat"))
-        template.make(binding).writeTo(writer)
+
+        new File(outputDirectory, "${applicationName}-install.bat").withWriter { writer ->
+            template.make(binding).writeTo(writer)
+        }
     }
 
     private Map createInstallOptionsMapFor(WindowsServicePluginConfiguration configuration) {
