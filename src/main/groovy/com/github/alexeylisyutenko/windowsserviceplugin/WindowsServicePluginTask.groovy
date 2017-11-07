@@ -1,17 +1,15 @@
 package com.github.alexeylisyutenko.windowsserviceplugin
 
+import com.github.alexeylisyutenko.windowsserviceplugin.script.InstallScriptGenerator
+import com.github.alexeylisyutenko.windowsserviceplugin.script.UninstallScriptGenerator
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
-import org.gradle.api.Task
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import com.github.alexeylisyutenko.windowsserviceplugin.script.InstallScriptGenerator
-import com.github.alexeylisyutenko.windowsserviceplugin.script.UninstallScriptGenerator
-
 /**
  * The main plugin's task that creates a windows service distribution.
  *
@@ -29,12 +27,16 @@ class WindowsServicePluginTask extends DefaultTask {
     }
 
     /**
+     * Classpath automatically obtained from the jar task.
+     */
+    FileCollection automaticClasspath = project.files()
+
+    /**
      * Input files which this task is dependent to.
      */
     @InputFiles
-    private FileCollection classpath = project.files()
     FileCollection getClasspath() {
-        classpath
+        configuration.overridingClasspath ?: automaticClasspath
     }
 
     /**
@@ -48,19 +50,17 @@ class WindowsServicePluginTask extends DefaultTask {
     WindowsServicePluginTask() {
         this.configuration = project.getConvention().getByType(WindowsServicePluginConfiguration.class)
 
+        // Apply Java gradle plugin.
         project.pluginManager.apply(JavaPlugin.class)
+
+        // Make this task depended on the jar task.
+        dependsOn.add(project.tasks[JavaPlugin.JAR_TASK_NAME])
+
+        // Populate classpath with jar task outputs and runtime dependencies.
         project.afterEvaluate {
-            registerClasspath(project.tasks[JavaPlugin.JAR_TASK_NAME])
-            registerClasspath(project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME])
+            automaticClasspath = automaticClasspath + project.files(project.tasks[JavaPlugin.JAR_TASK_NAME])
+            automaticClasspath = automaticClasspath + project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME]
         }
-    }
-
-    void registerClasspath(FileCollection inputFiles) {
-        this.classpath = this.classpath + inputFiles
-    }
-
-    void registerClasspath(Task inputTask) {
-        this.classpath = this.classpath + project.files(inputTask)
     }
 
     @TaskAction
@@ -85,7 +85,7 @@ class WindowsServicePluginTask extends DefaultTask {
      */
     def copyAllDependencies(File libraryDirectory) {
         project.copy {
-            from { this.classpath }
+            from { classpath }
             into { libraryDirectory }
         }
     }

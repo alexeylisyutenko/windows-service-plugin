@@ -1,9 +1,10 @@
 package com.github.alexeylisyutenko.windowsserviceplugin
 
 import groovy.transform.CompileStatic
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
-
 /**
  * Class which contains all settings needed for creating a windows service.
  *
@@ -215,5 +216,12 @@ class WindowsServicePluginConfiguration {
     @Input
     @Optional
     String pidFile
+
+    /**
+     * Use this property to override the classpath if the default classpath does not provide the results you want.
+     */
+    @InputFiles
+    @Optional
+    FileCollection overridingClasspath
 
 }

@@ -27,6 +27,17 @@ class WindowsServicePluginTest extends Specification {
         return project
     }
 
+    private File createFakeFile(String fileName, long size) {
+        File file = testProjectDir.newFile(fileName)
+        file.withOutputStream { outputStream ->
+            Random random = new Random()
+            for (int i = 0; i < size; i++) {
+                outputStream.write(random.nextInt())
+            }
+        }
+        file
+    }
+
     def "Applying the plugin adds corresponding task to project"() {
         given: "a basic project with com.github.alexeylisyutenko.windows-service-plugin"
         Project project = setupBasicProject()
@@ -248,7 +259,9 @@ class WindowsServicePluginTest extends Specification {
         installScriptLines.any { it.contains("++Environment=envKey1=value1;envKey2=value2;envKey3=value3") }
         installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
         installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
-        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
+        installScriptLines.any {
+            it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"")
+        }
         installScriptLines.any { it.contains("+JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
         installScriptLines.any { it.contains("--JvmMs=1024") }
         installScriptLines.any { it.contains("--JvmMx=2048") }
@@ -261,6 +274,98 @@ class WindowsServicePluginTest extends Specification {
         installScriptLines.any { it.contains("--StdOutput=auto") }
         installScriptLines.any { it.contains("--StdError=stderr.txt") }
         installScriptLines.any { it.contains("-PidFile=pid.txt") }
+    }
+
+    def "All jar task outputs and runtime dependencies should be copied to the lib directory and added to the classpath"() {
+        given:
+        createFakeFile('first-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('second-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('third-dependency.jar', new Random().nextInt(8192))
+        settingsFile << "rootProject.name = 'testProject'"
+        buildFile << """
+            plugins {
+                id 'com.github.alexeylisyutenko.windows-service-plugin'
+            }
+            windowsService {
+                architecture = 'amd64'
+                displayName = 'TestService'
+                description = 'Service generated with using gradle plugin'
+                startClass = 'Main'
+                startMethod = 'main'
+                startParams = 'start'
+                stopClass = 'Main'
+                stopMethod = 'main'
+                stopParams = 'stop'
+                startup = 'auto'
+            }
+            dependencies {
+                runtime files('first-dependency.jar', 'second-dependency.jar', 'third-dependency.jar')
+            }
+        """
+        when:
+        def result = GradleRunner.create()
+                .withProjectDir(testProjectDir.root)
+                .withArguments('createWindowsService')
+                .withPluginClasspath()
+                .build()
+        def installScriptLines = new File(testProjectDir.root, "build/windows-service/testProject-install.bat").readLines()
+
+        then:
+        result.task(":createWindowsService").outcome == SUCCESS
+        installScriptLines.any { it.contains("set CLASSPATH=%APP_HOME%lib\\testProject.jar;%APP_HOME%lib\\first-dependency.jar;%APP_HOME%lib\\second-dependency.jar;%APP_HOME%lib\\third-dependency.jar") }
+        new File(testProjectDir.root, "build/windows-service/lib/testProject.jar").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/first-dependency.jar").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/second-dependency.jar").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/third-dependency.jar").exists()
+    }
+
+    def "overridingClasspath should override a classpath obtained from the jar task"() {
+        given:
+        createFakeFile('first-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('second-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('third-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('first-overriding-classpath-dependency.jar', new Random().nextInt(8192))
+        createFakeFile('second-overriding-classpath-dependency.jar', new Random().nextInt(8192))
+        settingsFile << "rootProject.name = 'testProject'"
+        buildFile << """
+            plugins {
+                id 'com.github.alexeylisyutenko.windows-service-plugin'
+            }
+            windowsService {
+                architecture = 'amd64'
+                displayName = 'TestService'
+                description = 'Service generated with using gradle plugin'
+                startClass = 'Main'
+                startMethod = 'main'
+                startParams = 'start'
+                stopClass = 'Main'
+                stopMethod = 'main'
+                stopParams = 'stop'
+                startup = 'auto'
+                overridingClasspath = files('first-overriding-classpath-dependency.jar', 'second-overriding-classpath-dependency.jar')
+            }
+            dependencies {
+                runtime files('first-dependency.jar', 'second-dependency.jar', 'third-dependency.jar')
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+                .withProjectDir(testProjectDir.root)
+                .withArguments('createWindowsService')
+                .withPluginClasspath()
+                .build()
+        def installScriptLines = new File(testProjectDir.root, "build/windows-service/testProject-install.bat").readLines()
+
+        then:
+        result.task(":createWindowsService").outcome == SUCCESS
+        installScriptLines.any { it.contains("set CLASSPATH=%APP_HOME%lib\\first-overriding-classpath-dependency.jar;%APP_HOME%lib\\second-overriding-classpath-dependency.jar") }
+        !new File(testProjectDir.root, "build/windows-service/lib/testProject.jar").exists()
+        !new File(testProjectDir.root, "build/windows-service/lib/first-dependency.jar").exists()
+        !new File(testProjectDir.root, "build/windows-service/lib/second-dependency.jar").exists()
+        !new File(testProjectDir.root, "build/windows-service/lib/third-dependency.jar").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/first-overriding-classpath-dependency.jar").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/second-overriding-classpath-dependency.jar").exists()
     }
 
 }
