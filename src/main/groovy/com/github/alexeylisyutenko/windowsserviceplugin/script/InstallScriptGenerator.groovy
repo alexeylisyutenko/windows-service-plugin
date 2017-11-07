@@ -1,10 +1,10 @@
 package com.github.alexeylisyutenko.windowsserviceplugin.script
 
+import com.github.alexeylisyutenko.windowsserviceplugin.Utils
+import com.github.alexeylisyutenko.windowsserviceplugin.WindowsServicePluginConfiguration
 import groovy.text.SimpleTemplateEngine
 import groovy.text.Template
 import org.gradle.api.file.FileCollection
-import com.github.alexeylisyutenko.windowsserviceplugin.Utils
-import com.github.alexeylisyutenko.windowsserviceplugin.WindowsServicePluginConfiguration
 
 import java.util.stream.Collectors
 
@@ -31,8 +31,8 @@ class InstallScriptGenerator {
         def binding = [
                 applicationName: applicationName,
                 serviceExeName : applicationName + ".exe",
-                classpath      : createJoinedClasspath(),
-                installOptions : createInstallOptions()
+                classpath      : JoinedClasspathBuilder.build(classpath),
+                installOptions : InstallOptionsBuilder.build(configuration)
         ]
         generateOutputFor(binding)
     }
@@ -47,41 +47,68 @@ class InstallScriptGenerator {
         }
     }
 
-    private Map createInstallOptionsMapFor(WindowsServicePluginConfiguration configuration) {
-        def options = [
-                "--Classpath"  : "%CLASSPATH%",
-                "--Description": configuration.description,
-                "--DisplayName": configuration.displayName,
-                "--StartClass" : configuration.startClass,
-                "--StartMethod": configuration.startMethod,
-                "++StartParams": configuration.startParams,
-                "--StartMode"  : "jvm",
-                "--StopClass"  : configuration.stopClass,
-                "--StopMethod" : configuration.stopMethod,
-                "++StopParams" : configuration.stopParams,
-                "--StopMode"   : "jvm",
-                "--Jvm"        : "auto",
-                "--Startup"    : configuration.startup.name().toLowerCase()
-        ]
-        options
+    private static class JoinedClasspathBuilder {
+        static String build(FileCollection classpath) {
+            classpath.files
+                    .collect { file -> '%APP_HOME%lib\\' + file.getName() }
+                    .join(';')
+        }
     }
 
-    private String createInstallOptions() {
-        Map options = createInstallOptionsMapFor(configuration)
-        options.entrySet().stream()
-                .filter { it.value != null }
-                .map { it.key + '=' + addQuotesIfNeeded(it.value) }
-                .collect(Collectors.joining(' ^\n    ', '^\n    ', ''))
-    }
+    private static class InstallOptionsBuilder {
 
-    private Object addQuotesIfNeeded(String value) {
-        value.contains(" ") ? "\"" + value + "\"" : value
-    }
+        static String build(WindowsServicePluginConfiguration configuration) {
+            Map<String, String> options = createInstallOptionsMapFor(configuration)
+            options.entrySet().stream()
+                    .filter { it.value != null }
+                    .map { it.key + '=' + addQuotesIfNeeded(it.value) }
+                    .collect(Collectors.joining(' ^\n    ', '^\n    ', ''))
+        }
 
-    private String createJoinedClasspath() {
-        classpath.files
-                .collect { file -> '%APP_HOME%lib\\' + file.getName() }
-                .join(';')
+        private static Map<String, String> createInstallOptionsMapFor(WindowsServicePluginConfiguration configuration) {
+            def options = [
+                    "--Classpath"     : "%CLASSPATH%",
+                    "--Description"   : configuration.description,
+                    "--DisplayName"   : configuration.displayName,
+                    "--StartClass"    : configuration.startClass,
+                    "--StartMethod"   : configuration.startMethod,
+                    "++StartParams"   : configuration.startParams,
+                    "--StartMode"     : "jvm",
+                    "--StopClass"     : configuration.stopClass,
+                    "--StopMethod"    : configuration.stopMethod,
+                    "++StopParams"    : configuration.stopParams,
+                    "--StopMode"      : "jvm",
+                    "--Jvm"           : toWindowsPath(configuration.jvm),
+                    "--Startup"       : configuration.startup.name().toLowerCase(),
+                    "--Type"          : configuration.interactive ? "interactive" : null,
+                    "++DependsOn"     : configuration.dependsOn,
+                    "++Environment"   : configuration.environment,
+                    "--LibraryPath"   : toWindowsPath(configuration.libraryPath),
+                    "--JavaHome"      : toWindowsPath(configuration.javaHome),
+                    "++JvmOptions"    : configuration.jvmOptions,
+                    "--JvmMs"         : configuration.jvmMs?.toString(),
+                    "--JvmMx"         : configuration.jvmMx?.toString(),
+                    "--JvmSs"         : configuration.jvmSs?.toString(),
+                    "--StopTimeout"   : configuration.stopTimeout?.toString(),
+                    "--LogPath"       : toWindowsPath(configuration.logPath),
+                    "--LogPrefix"     : configuration.logPrefix,
+                    "--LogLevel"      : configuration.logLevel?.name()?.toLowerCase()?.capitalize(),
+                    "--LogJniMessages": configuration.logJniMessages?.toString(),
+                    "--StdOutput"     : configuration.stdOutput,
+                    "--StdError"      : configuration.stdError,
+                    "--PidFile"       : configuration.pidFile
+            ]
+            options
+        }
+
+        private static String toWindowsPath(String path) {
+            path?.replace('/', '\\')
+        }
+
+        private static Object addQuotesIfNeeded(String value) {
+            value.contains(" ") ? "\"" + value + "\"" : value
+        }
+
     }
 
 }

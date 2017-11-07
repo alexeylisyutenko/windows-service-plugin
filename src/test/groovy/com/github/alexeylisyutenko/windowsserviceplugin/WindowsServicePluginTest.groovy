@@ -179,4 +179,88 @@ class WindowsServicePluginTest extends Specification {
         result.task(":createWindowsService").outcome == SUCCESS
     }
 
+    def "A script with a full set of all procrun configuration parameters should work properly"() {
+        given:
+        settingsFile << "rootProject.name = 'testProject'"
+        buildFile << """
+            plugins {
+                id 'com.github.alexeylisyutenko.windows-service-plugin'
+            }
+            windowsService {
+                architecture = 'amd64'
+                displayName = 'TestService'
+                description = 'Service generated with using gradle plugin'
+                startClass = 'Main'
+                startMethod = 'main'
+                startParams = 'start'
+                stopClass = 'Main'
+                stopMethod = 'main'
+                stopParams = 'stop'
+                startup = 'auto'
+                interactive = true
+                dependsOn = 'AnotherWindowsService'
+                environment = 'envKey1=value1;envKey2=value2;envKey3=value3'
+                libraryPath = '.\\\\runtime\\\\bin'
+                javaHome = '.\\\\runtime'
+                jvm = 'C:\\\\Program Files\\\\Java\\\\jdk1.8.0_112\\\\jre\\\\bin\\\\server\\\\jvm.dll'
+                jvmOptions = '-XX:NewRatio=1#-XX:+UseConcMarkSweepGC'  
+                jvmMs = 1024
+                jvmMx = 2048
+                jvmSs = 512
+                stopTimeout = 60
+                logPath = '.\\\\procrun-logs'     
+                logPrefix = 'log-prefix'
+                logLevel = 'error'
+                logJniMessages = 1
+                stdOutput = 'auto'
+                stdError = 'stderr.txt'
+                pidFile = 'pid.txt'    
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+                .withProjectDir(testProjectDir.root)
+                .withArguments('createWindowsService')
+                .withPluginClasspath()
+                .build()
+        def installScriptLines = new File(testProjectDir.root, "build/windows-service/testProject-install.bat").readLines()
+
+        then:
+        result.task(":createWindowsService").outcome == SUCCESS
+
+        new File(testProjectDir.root, "build/windows-service/testProject.exe").exists()
+        new File(testProjectDir.root, "build/windows-service/testProjectw.exe").exists()
+        new File(testProjectDir.root, "build/windows-service/testProject-install.bat").exists()
+        new File(testProjectDir.root, "build/windows-service/testProject-uninstall.bat").exists()
+        new File(testProjectDir.root, "build/windows-service/lib/testProject.jar").exists()
+
+        installScriptLines.any { it.contains("--DisplayName=TestService") }
+        installScriptLines.any { it.contains("--Description=\"Service generated with using gradle plugin\"") }
+        installScriptLines.any { it.contains("--StartClass=Main") }
+        installScriptLines.any { it.contains("--StartMethod=main") }
+        installScriptLines.any { it.contains("++StartParams=start") }
+        installScriptLines.any { it.contains("--StopClass=Main") }
+        installScriptLines.any { it.contains("--StopMethod=main") }
+        installScriptLines.any { it.contains("++StopParams=stop") }
+        installScriptLines.any { it.contains("--Type=interactive") }
+        installScriptLines.any { it.contains("++DependsOn=AnotherWindowsService") }
+        installScriptLines.any { it.contains("++Environment=envKey1=value1;envKey2=value2;envKey3=value3") }
+        installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
+        installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
+        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
+        installScriptLines.any { it.contains("+JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+        installScriptLines.any { it.contains("--JvmMs=1024") }
+        installScriptLines.any { it.contains("--JvmMx=2048") }
+        installScriptLines.any { it.contains("--JvmSs=512") }
+        installScriptLines.any { it.contains("--StopTimeout=60") }
+        installScriptLines.any { it.contains("--LogPath=.\\procrun-logs") }
+        installScriptLines.any { it.contains("--LogPrefix=log-prefix") }
+        installScriptLines.any { it.contains("--LogLevel=Error") }
+        installScriptLines.any { it.contains("--LogJniMessages=1") }
+        installScriptLines.any { it.contains("--StdOutput=auto") }
+        installScriptLines.any { it.contains("--StdError=stderr.txt") }
+        installScriptLines.any { it.contains("-PidFile=pid.txt") }
+    }
+
 }

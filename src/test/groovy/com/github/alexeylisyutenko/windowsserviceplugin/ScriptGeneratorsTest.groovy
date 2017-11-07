@@ -69,4 +69,76 @@ class ScriptGeneratorsTest extends Specification {
         assert FileUtils.contentEquals(generatedFile, sampleFile)
     }
 
+    def "Some configuration parameters which contain paths should be converted to windows style paths"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        configuration.libraryPath = './runtime/bin'
+        configuration.javaHome = './runtime'
+        configuration.jvm = 'C:/Program Files/Java/jdk1.8.0_112/jre/bin/server/jvm.dll'
+        configuration.logPath = './procrun-logs'
+
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptLines = new File(temporaryFolder.root, "testProject-install.bat").readLines()
+
+        then:
+        installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
+        installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
+        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
+        installScriptLines.any { it.contains("--LogPath=.\\procrun-logs") }
+    }
+
+    def "All additional procrun configuration parameters should be present in a resulting install.bat file if they're set"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        configuration.interactive = true
+        configuration.dependsOn = 'AnotherWindowsService'
+        configuration.environment = 'envKey1=value1;envKey2=value2;envKey3=value3'
+        configuration.libraryPath = '.\\runtime\\bin'
+        configuration.javaHome = '.\\runtime'
+        configuration.jvm = 'C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll'
+        configuration.jvmOptions = '-XX:NewRatio=1#-XX:+UseConcMarkSweepGC'
+        configuration.jvmMs = 1024
+        configuration.jvmMx = 2048
+        configuration.jvmSs = 512
+        configuration.stopTimeout = 60
+        configuration.logPath = '.\\procrun-logs'
+        configuration.logPrefix = 'log-prefix'
+        configuration.logLevel = 'ERROR'
+        configuration.logJniMessages = 1
+        configuration.stdOutput = 'auto'
+        configuration.stdError = 'stderr.txt'
+        configuration.pidFile = 'pid.txt'
+
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptLines = new File(temporaryFolder.root, "testProject-install.bat").readLines()
+
+        then:
+        installScriptLines.any { it.contains("--Type=interactive") }
+        installScriptLines.any { it.contains("++DependsOn=AnotherWindowsService") }
+        installScriptLines.any { it.contains("++Environment=envKey1=value1;envKey2=value2;envKey3=value3") }
+        installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
+        installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
+        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
+        installScriptLines.any { it.contains("+JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+        installScriptLines.any { it.contains("--JvmMs=1024") }
+        installScriptLines.any { it.contains("--JvmMx=2048") }
+        installScriptLines.any { it.contains("--JvmSs=512") }
+        installScriptLines.any { it.contains("--StopTimeout=60") }
+        installScriptLines.any { it.contains("--LogPath=.\\procrun-logs") }
+        installScriptLines.any { it.contains("--LogPrefix=log-prefix") }
+        installScriptLines.any { it.contains("--LogLevel=Error") }
+        installScriptLines.any { it.contains("--LogJniMessages=1") }
+        installScriptLines.any { it.contains("--StdOutput=auto") }
+        installScriptLines.any { it.contains("--StdError=stderr.txt") }
+        installScriptLines.any { it.contains("-PidFile=pid.txt") }
+    }
+
 }
