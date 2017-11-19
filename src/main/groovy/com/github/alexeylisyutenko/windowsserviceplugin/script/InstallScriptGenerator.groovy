@@ -43,7 +43,8 @@ class InstallScriptGenerator {
         Template template = engine.createTemplate(reader)
 
         new File(outputDirectory, "${applicationName}-install.bat").withWriter { writer ->
-            template.make(binding).writeTo(writer)
+            String output = template.make(binding).toString()
+            writer.write(Utils.convertLineSeparatorsToWindows(output))
         }
     }
 
@@ -62,7 +63,7 @@ class InstallScriptGenerator {
             options.entrySet().stream()
                     .filter { it.value != null }
                     .map { it.key + '=' + addQuotesIfNeeded(it.value) }
-                    .collect(Collectors.joining(' ^\n    ', '^\n    ', ''))
+                    .collect(Collectors.joining(' ^\r\n    ', '^\r\n    ', ''))
         }
 
         private static Map<String, String> createInstallOptionsMapFor(WindowsServicePluginConfiguration configuration) {

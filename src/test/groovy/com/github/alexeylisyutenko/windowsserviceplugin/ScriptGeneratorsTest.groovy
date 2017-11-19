@@ -141,4 +141,29 @@ class ScriptGeneratorsTest extends Specification {
         installScriptLines.any { it.contains("-PidFile=pid.txt") }
     }
 
+    def "Generated install script should contain only windows style line endings - crlf"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptText = new File(temporaryFolder.root, "testProject-install.bat").getText()
+
+        then:
+        !(installScriptText =~ /[^\r]\n/)
+    }
+
+    def "Generated uninstall script should contain only windows style line endings - crlf"() {
+        def generator = new UninstallScriptGenerator('testProject', temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def uninstallScriptText = new File(temporaryFolder.root, "testProject-uninstall.bat").getText()
+
+        then:
+        !(uninstallScriptText =~ /[^\r]\n/)
+    }
+
 }
