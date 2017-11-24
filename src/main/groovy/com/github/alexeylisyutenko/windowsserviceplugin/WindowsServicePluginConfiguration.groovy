@@ -5,10 +5,9 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
+
 /**
  * Class which contains all settings needed for creating a windows service.
- *
- * Created by Алексей Лисютенко on 28.02.2017.
  */
 @CompileStatic
 class WindowsServicePluginConfiguration {

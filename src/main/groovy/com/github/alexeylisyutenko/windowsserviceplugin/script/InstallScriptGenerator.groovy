@@ -10,8 +10,6 @@ import java.util.stream.Collectors
 
 /**
  * A class which generates batch script for installing a service.
- *
- * Created by Алексей Лисютенко on 10.03.2017.
  */
 class InstallScriptGenerator {
 

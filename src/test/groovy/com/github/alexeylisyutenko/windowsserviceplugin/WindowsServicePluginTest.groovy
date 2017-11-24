@@ -7,6 +7,7 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import spock.lang.Specification
 
+import static org.gradle.testkit.runner.TaskOutcome.FAILED
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS
 
 class WindowsServicePluginTest extends Specification {
@@ -312,7 +313,9 @@ class WindowsServicePluginTest extends Specification {
 
         then:
         result.task(":createWindowsService").outcome == SUCCESS
-        installScriptLines.any { it.contains("set CLASSPATH=%APP_HOME%lib\\testProject.jar;%APP_HOME%lib\\first-dependency.jar;%APP_HOME%lib\\second-dependency.jar;%APP_HOME%lib\\third-dependency.jar") }
+        installScriptLines.any {
+            it.contains("set CLASSPATH=%APP_HOME%lib\\testProject.jar;%APP_HOME%lib\\first-dependency.jar;%APP_HOME%lib\\second-dependency.jar;%APP_HOME%lib\\third-dependency.jar")
+        }
         new File(testProjectDir.root, "build/windows-service/lib/testProject.jar").exists()
         new File(testProjectDir.root, "build/windows-service/lib/first-dependency.jar").exists()
         new File(testProjectDir.root, "build/windows-service/lib/second-dependency.jar").exists()
@@ -359,13 +362,47 @@ class WindowsServicePluginTest extends Specification {
 
         then:
         result.task(":createWindowsService").outcome == SUCCESS
-        installScriptLines.any { it.contains("set CLASSPATH=%APP_HOME%lib\\first-overriding-classpath-dependency.jar;%APP_HOME%lib\\second-overriding-classpath-dependency.jar") }
+        installScriptLines.any {
+            it.contains("set CLASSPATH=%APP_HOME%lib\\first-overriding-classpath-dependency.jar;%APP_HOME%lib\\second-overriding-classpath-dependency.jar")
+        }
         !new File(testProjectDir.root, "build/windows-service/lib/testProject.jar").exists()
         !new File(testProjectDir.root, "build/windows-service/lib/first-dependency.jar").exists()
         !new File(testProjectDir.root, "build/windows-service/lib/second-dependency.jar").exists()
         !new File(testProjectDir.root, "build/windows-service/lib/third-dependency.jar").exists()
         new File(testProjectDir.root, "build/windows-service/lib/first-overriding-classpath-dependency.jar").exists()
         new File(testProjectDir.root, "build/windows-service/lib/second-overriding-classpath-dependency.jar").exists()
+    }
+
+    def "The createWindowsService task should fail if architecture is ia64"() {
+        given:
+        settingsFile << "rootProject.name = 'testProject'"
+        buildFile << """
+            plugins {
+                id 'com.github.alexeylisyutenko.windows-service-plugin'
+            }
+            windowsService {
+                architecture = 'ia64'
+                displayName = 'TestService'
+                description = 'Service generated with using gradle plugin'
+                startClass = 'Main'
+                startMethod = 'main'
+                startParams = 'start'
+                stopClass = 'Main'
+                stopMethod = 'main'
+                stopParams = 'stop'
+                startup = 'auto'
+            }
+        """
+
+        when:
+        def result = GradleRunner.create()
+                .withProjectDir(testProjectDir.root)
+                .withArguments('createWindowsService')
+                .withPluginClasspath()
+                .buildAndFail()
+
+        then:
+        result.task(":createWindowsService").outcome == FAILED
     }
 
 }

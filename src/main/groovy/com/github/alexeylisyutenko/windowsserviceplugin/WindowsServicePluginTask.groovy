@@ -6,10 +6,8 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Nested
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
+
 /**
  * The main plugin's task that creates a windows service distribution.
  *
@@ -22,6 +20,7 @@ class WindowsServicePluginTask extends DefaultTask {
      */
     @Nested
     private WindowsServicePluginConfiguration configuration
+
     WindowsServicePluginConfiguration getConfiguration() {
         configuration
     }
@@ -29,6 +28,7 @@ class WindowsServicePluginTask extends DefaultTask {
     /**
      * Classpath automatically obtained from the jar task.
      */
+    @Internal
     FileCollection automaticClasspath = project.files()
 
     /**
@@ -65,6 +65,13 @@ class WindowsServicePluginTask extends DefaultTask {
 
     @TaskAction
     void run() {
+        // There is no precompiled Intel Itanium 64-bit executable of Procrun in a maven artifact in a version 1.1.0 of
+        // Apache Commons Daemon. Therefore, the task should fail if an architecture field is set to ia64.
+        if (configuration.architecture == Architecture.IA64) {
+            throw new GradleException("Intel Itanium 64-bit architecture (ia64) is not supported. " +
+                    "Please use either x86 architecture (x86) or AMD/EMT 64-bit architecture (amd64).")
+        }
+
         // Clean output directory.
         project.delete(outputDirectory)
 
@@ -111,9 +118,6 @@ class WindowsServicePluginTask extends DefaultTask {
                     break
                 case Architecture.AMD64:
                     include 'amd64/prunsrv.exe'
-                    break
-                case Architecture.IA64:
-                    include 'ia64/prunsrv.exe'
                     break
             }
         }.files

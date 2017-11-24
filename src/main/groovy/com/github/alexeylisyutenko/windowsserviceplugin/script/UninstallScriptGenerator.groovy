@@ -5,7 +5,7 @@ import groovy.text.SimpleTemplateEngine
 import groovy.text.Template
 
 /**
- * Created by Алексей Лисютенко on 16.05.2017.
+ * A class which generates batch script for uninstalling a service.
  */
 class UninstallScriptGenerator {
 
