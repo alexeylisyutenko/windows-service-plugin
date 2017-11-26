@@ -65,7 +65,7 @@ class WindowsServicePluginTask extends DefaultTask {
 
     @TaskAction
     void run() {
-        // There is no precompiled Intel Itanium 64-bit executable of Procrun in a maven artifact in a version 1.1.0 of
+        // There is no precompiled Intel Itanium 64-bit executable of Procrun in a maven artifact since a version 1.1.0 of
         // Apache Commons Daemon. Therefore, the task should fail if an architecture field is set to ia64.
         if (configuration.architecture == Architecture.IA64) {
             throw new GradleException("Intel Itanium 64-bit architecture (ia64) is not supported. " +

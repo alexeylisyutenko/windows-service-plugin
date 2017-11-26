@@ -216,6 +216,7 @@ class WindowsServicePluginTest extends Specification {
                 javaHome = '.\\\\runtime'
                 jvm = 'C:\\\\Program Files\\\\Java\\\\jdk1.8.0_112\\\\jre\\\\bin\\\\server\\\\jvm.dll'
                 jvmOptions = '-XX:NewRatio=1#-XX:+UseConcMarkSweepGC'  
+                jvmOptions9 = '-XX:NewRatio=1#-XX:+UseConcMarkSweepGC'  
                 jvmMs = 1024
                 jvmMx = 2048
                 jvmSs = 512
@@ -263,7 +264,8 @@ class WindowsServicePluginTest extends Specification {
         installScriptLines.any {
             it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"")
         }
-        installScriptLines.any { it.contains("+JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+        installScriptLines.any { it.contains("++JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+        installScriptLines.any { it.contains("++JvmOptions9=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
         installScriptLines.any { it.contains("--JvmMs=1024") }
         installScriptLines.any { it.contains("--JvmMx=2048") }
         installScriptLines.any { it.contains("--JvmSs=512") }

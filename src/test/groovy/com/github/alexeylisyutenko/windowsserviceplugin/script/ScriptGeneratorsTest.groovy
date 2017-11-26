@@ -1,7 +1,6 @@
-package com.github.alexeylisyutenko.windowsserviceplugin
+package com.github.alexeylisyutenko.windowsserviceplugin.script
 
-import com.github.alexeylisyutenko.windowsserviceplugin.script.InstallScriptGenerator
-import com.github.alexeylisyutenko.windowsserviceplugin.script.UninstallScriptGenerator
+import com.github.alexeylisyutenko.windowsserviceplugin.WindowsServicePluginConfiguration
 import org.apache.commons.io.FileUtils
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.testfixtures.ProjectBuilder
@@ -87,7 +86,9 @@ class ScriptGeneratorsTest extends Specification {
         then:
         installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
         installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
-        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
+        installScriptLines.any {
+            it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"")
+        }
         installScriptLines.any { it.contains("--LogPath=.\\procrun-logs") }
     }
 
@@ -126,8 +127,10 @@ class ScriptGeneratorsTest extends Specification {
         installScriptLines.any { it.contains("++Environment=envKey1=value1;envKey2=value2;envKey3=value3") }
         installScriptLines.any { it.contains("--LibraryPath=.\\runtime\\bin") }
         installScriptLines.any { it.contains("--JavaHome=.\\runtime") }
-        installScriptLines.any { it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"") }
-        installScriptLines.any { it.contains("+JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+        installScriptLines.any {
+            it.contains("--Jvm=\"C:\\Program Files\\Java\\jdk1.8.0_112\\jre\\bin\\server\\jvm.dll\"")
+        }
+        installScriptLines.any { it.contains("++JvmOptions=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
         installScriptLines.any { it.contains("--JvmMs=1024") }
         installScriptLines.any { it.contains("--JvmMx=2048") }
         installScriptLines.any { it.contains("--JvmSs=512") }
@@ -164,6 +167,48 @@ class ScriptGeneratorsTest extends Specification {
 
         then:
         !(uninstallScriptText =~ /[^\r]\n/)
+    }
+
+    def "JvmOptions9 configuration parameter should be present in a resulting install.bat file if it is set"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        configuration.jvmOptions9 = '-XX:NewRatio=1#-XX:+UseConcMarkSweepGC'
+
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptLines = new File(temporaryFolder.root, "testProject-install.bat").readLines()
+
+        then:
+        installScriptLines.any { it.contains("++JvmOptions9=-XX:NewRatio=1#-XX:+UseConcMarkSweepGC") }
+    }
+
+    def "Multi value parameters when set as list or maps should work properly"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        configuration.startParams = ['startParam1', 'startParam2', 'startParam3']
+        configuration.stopParams = ['stopParams1', 'stopParams2', 'stopParams3']
+        configuration.dependsOn = ['AnotherWindowsService1', 'AnotherWindowsService2']
+        configuration.environment = ['key1': 'value1', 'key2': 'value2', 'key3': 'value3']
+        configuration.jvmOptions = ['jvmOption1', 'jvmOption2', 'jvmOption3']
+        configuration.jvmOptions9 = ['jvmOption91', 'jvmOption92', 'jvmOption93']
+
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptLines = new File(temporaryFolder.root, "testProject-install.bat").readLines()
+
+        then:
+        installScriptLines.any { it.contains("++StartParams=startParam1;startParam2;startParam3") }
+        installScriptLines.any { it.contains("++StopParams=stopParams1;stopParams2;stopParams3") }
+        installScriptLines.any { it.contains("++DependsOn=AnotherWindowsService1;AnotherWindowsService2") }
+        installScriptLines.any { it.contains("++Environment=key1=value1;key2=value2;key3=value3") }
+        installScriptLines.any { it.contains("++JvmOptions=jvmOption1;jvmOption2;jvmOption3") }
+        installScriptLines.any { it.contains("++JvmOptions9=jvmOption91;jvmOption92;jvmOption93") }
     }
 
 }

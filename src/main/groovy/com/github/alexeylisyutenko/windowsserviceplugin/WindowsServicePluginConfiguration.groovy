@@ -54,7 +54,7 @@ class WindowsServicePluginConfiguration {
      */
     @Input
     @Optional
-    String startParams
+    Object startParams
 
     /**
      * A class name that will be used on Stop service signal.
@@ -73,7 +73,7 @@ class WindowsServicePluginConfiguration {
      */
     @Input
     @Optional
-    String stopParams
+    Object stopParams
 
     /**
      * A startup mode for a service.
@@ -89,11 +89,11 @@ class WindowsServicePluginConfiguration {
     Boolean interactive
 
     /**
-     * List of services that this service depends on. Dependent services are separated using either # or ; characters
+     * List of services that this service depends on. Dependent services are separated using either # or ; characters.
      */
     @Input
     @Optional
-    String dependsOn
+    Object dependsOn
 
     /**
      * List of environment variables that will be provided to the service in the form key=value. They are separated
@@ -102,7 +102,7 @@ class WindowsServicePluginConfiguration {
      */
     @Input
     @Optional
-    String environment
+    Object environment
 
     /**
      * Directory added to the search path used to locate the DLLs for the JVM. This directory is added both in front of
@@ -133,7 +133,16 @@ class WindowsServicePluginConfiguration {
      */
     @Input
     @Optional
-    String jvmOptions
+    Object jvmOptions
+
+    /**
+     * List of options in the form of -D or -X that will be passed to the JVM when running on Java 9 or later.
+     * The options are separated using either # or ; characters. If you need to embed either # or ; character put them
+     * inside single quotes.
+     */
+    @Input
+    @Optional
+    Object jvmOptions9
 
     /**
      * Initial memory pool size in MB.
