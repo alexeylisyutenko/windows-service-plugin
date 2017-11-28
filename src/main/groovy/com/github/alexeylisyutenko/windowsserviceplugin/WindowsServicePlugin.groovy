@@ -33,7 +33,7 @@ class WindowsServicePlugin implements Plugin<Project> {
     /**
      * The apache commons daemon artifact version.
      */
-    static final String COMMONS_DAEMON_BIN_ARTIFACT_VERSION = '1.0.15'
+    static final String COMMONS_DAEMON_BIN_ARTIFACT_VERSION = '1.1.0'
 
     @Override
     void apply(Project project) {

@@ -1,16 +1,12 @@
 package com.github.alexeylisyutenko.windowsserviceplugin
 
-import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
-import org.gradle.api.Task
-import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.JavaPlugin
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Nested
-import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.TaskAction
 import com.github.alexeylisyutenko.windowsserviceplugin.script.InstallScriptGenerator
 import com.github.alexeylisyutenko.windowsserviceplugin.script.UninstallScriptGenerator
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.file.FileCollection
+import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.*
 
 /**
  * The main plugin's task that creates a windows service distribution.
@@ -24,17 +20,23 @@ class WindowsServicePluginTask extends DefaultTask {
      */
     @Nested
     private WindowsServicePluginConfiguration configuration
+
     WindowsServicePluginConfiguration getConfiguration() {
         configuration
     }
 
     /**
+     * Classpath automatically obtained from the jar task.
+     */
+    @Internal
+    FileCollection automaticClasspath = project.files()
+
+    /**
      * Input files which this task is dependent to.
      */
     @InputFiles
-    private FileCollection classpath = project.files()
     FileCollection getClasspath() {
-        classpath
+        configuration.overridingClasspath ?: automaticClasspath
     }
 
     /**
@@ -48,23 +50,28 @@ class WindowsServicePluginTask extends DefaultTask {
     WindowsServicePluginTask() {
         this.configuration = project.getConvention().getByType(WindowsServicePluginConfiguration.class)
 
+        // Apply Java gradle plugin.
         project.pluginManager.apply(JavaPlugin.class)
+
+        // Make this task depended on the jar task.
+        dependsOn.add(project.tasks[JavaPlugin.JAR_TASK_NAME])
+
+        // Populate classpath with jar task outputs and runtime dependencies.
         project.afterEvaluate {
-            registerClasspath(project.tasks[JavaPlugin.JAR_TASK_NAME])
-            registerClasspath(project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME])
+            automaticClasspath = automaticClasspath + project.files(project.tasks[JavaPlugin.JAR_TASK_NAME])
+            automaticClasspath = automaticClasspath + project.configurations[JavaPlugin.RUNTIME_CONFIGURATION_NAME]
         }
-    }
-
-    void registerClasspath(FileCollection inputFiles) {
-        this.classpath = this.classpath + inputFiles
-    }
-
-    void registerClasspath(Task inputTask) {
-        this.classpath = this.classpath + project.files(inputTask)
     }
 
     @TaskAction
     void run() {
+        // There is no precompiled Intel Itanium 64-bit executable of Procrun in a maven artifact since a version 1.1.0 of
+        // Apache Commons Daemon. Therefore, the task should fail if an architecture field is set to ia64.
+        if (configuration.architecture == Architecture.IA64) {
+            throw new GradleException("Intel Itanium 64-bit architecture (ia64) is not supported. " +
+                    "Please use either x86 architecture (x86) or AMD/EMT 64-bit architecture (amd64).")
+        }
+
         // Clean output directory.
         project.delete(outputDirectory)
 
@@ -85,7 +92,7 @@ class WindowsServicePluginTask extends DefaultTask {
      */
     def copyAllDependencies(File libraryDirectory) {
         project.copy {
-            from { this.classpath }
+            from { classpath }
             into { libraryDirectory }
         }
     }
@@ -111,9 +118,6 @@ class WindowsServicePluginTask extends DefaultTask {
                     break
                 case Architecture.AMD64:
                     include 'amd64/prunsrv.exe'
-                    break
-                case Architecture.IA64:
-                    include 'ia64/prunsrv.exe'
                     break
             }
         }.files

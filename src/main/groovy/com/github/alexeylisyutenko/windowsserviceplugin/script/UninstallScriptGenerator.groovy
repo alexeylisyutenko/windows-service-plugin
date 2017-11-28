@@ -1,11 +1,11 @@
 package com.github.alexeylisyutenko.windowsserviceplugin.script
 
+import com.github.alexeylisyutenko.windowsserviceplugin.Utils
 import groovy.text.SimpleTemplateEngine
 import groovy.text.Template
-import com.github.alexeylisyutenko.windowsserviceplugin.Utils
 
 /**
- * Created by Алексей Лисютенко on 16.05.2017.
+ * A class which generates batch script for uninstalling a service.
  */
 class UninstallScriptGenerator {
 
@@ -31,7 +31,8 @@ class UninstallScriptGenerator {
         Template template = engine.createTemplate(reader)
 
         new File(outputDirectory, "${applicationName}-uninstall.bat").withWriter { writer ->
-            template.make(binding).writeTo(writer)
+            String output = template.make(binding).toString()
+            writer.write(Utils.convertLineSeparatorsToWindows(output))
         }
     }
 
