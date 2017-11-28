@@ -211,4 +211,22 @@ class ScriptGeneratorsTest extends Specification {
         installScriptLines.any { it.contains("++JvmOptions9=jvmOption91;jvmOption92;jvmOption93") }
     }
 
+    def "serviceUser and servicePassword parameters should work properly"() {
+        given:
+        def configuration = setupBasicWindowsServicePluginConfiguration()
+        configuration.serviceUser = '.\\ServiceUser'
+        configuration.servicePassword = 'servicePassword'
+
+        def fileCollection = setupBasicClasspathFileCollection()
+        def generator = new InstallScriptGenerator('testProject', fileCollection, configuration, temporaryFolder.root)
+
+        when:
+        generator.generate()
+        def installScriptLines = new File(temporaryFolder.root, "testProject-install.bat").readLines()
+
+        then:
+        installScriptLines.any { it.contains("--ServiceUser=.\\ServiceUser") }
+        installScriptLines.any { it.contains("--ServicePassword=servicePassword") }
+    }
+
 }

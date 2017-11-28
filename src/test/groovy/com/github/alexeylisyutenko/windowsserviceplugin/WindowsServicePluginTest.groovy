@@ -227,7 +227,9 @@ class WindowsServicePluginTest extends Specification {
                 logJniMessages = 1
                 stdOutput = 'auto'
                 stdError = 'stderr.txt'
-                pidFile = 'pid.txt'    
+                pidFile = 'pid.txt'  
+                serviceUser = '.\\\\ServiceUser'
+                servicePassword = 'servicePassword'  
             }
         """
 
@@ -277,6 +279,8 @@ class WindowsServicePluginTest extends Specification {
         installScriptLines.any { it.contains("--StdOutput=auto") }
         installScriptLines.any { it.contains("--StdError=stderr.txt") }
         installScriptLines.any { it.contains("-PidFile=pid.txt") }
+        installScriptLines.any { it.contains("--ServiceUser=.\\ServiceUser") }
+        installScriptLines.any { it.contains("--ServicePassword=servicePassword") }
     }
 
     def "All jar task outputs and runtime dependencies should be copied to the lib directory and added to the classpath"() {

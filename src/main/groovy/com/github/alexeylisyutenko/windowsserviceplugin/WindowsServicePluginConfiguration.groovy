@@ -51,6 +51,16 @@ class WindowsServicePluginConfiguration {
 
     /**
      * A list of parameters that will be passed to StartClass.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ul>
+     * <li>As a string where parameters are separated using either # or ; character:
+     * <blockquote><pre>windowsService.startParams='startParam1;startParam2'</pre></blockquote>
+     * <li>As a list:
+     * <blockquote><pre>windowsService.startParams=['startParam1', 'startParam2']</pre></blockquote>
+     * </ul>
+     * </p>
      */
     @Input
     @Optional
@@ -70,6 +80,16 @@ class WindowsServicePluginConfiguration {
 
     /**
      * A list of parameters that will be passed to StopClass.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ul>
+     * <li>As a string where parameters are separated using either # or ; character:
+     * <blockquote><pre>windowsService.stopParams='stopParam1;stopParam2'</pre></blockquote>
+     * <li>As a list:
+     * <blockquote><pre>windowsService.stopParams=['stopParam1', 'stopParam2']</pre></blockquote>
+     * </ul>
+     * </p>
      */
     @Input
     @Optional
@@ -89,16 +109,36 @@ class WindowsServicePluginConfiguration {
     Boolean interactive
 
     /**
-     * List of services that this service depends on. Dependent services are separated using either # or ; characters.
+     * List of services that this service depends on.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ul>
+     * <li>As a string where parameters are separated using either # or ; character:
+     * <blockquote><pre>windowsService.dependsOn='WindowsServiceOne;WindowsServiceTwo'</pre></blockquote>
+     * <li>As a list:
+     * <blockquote><pre>windowsService.dependsOn=['WindowsServiceOne', 'WindowsServiceTwo']</pre></blockquote>
+     * </ul>
+     * </p>
      */
     @Input
     @Optional
     Object dependsOn
 
     /**
-     * List of environment variables that will be provided to the service in the form key=value. They are separated
-     * using either # or ; characters. If you need to embed either # or ; character within a value put them inside
-     * single quotes.
+     * List of environment variables that will be provided to the service in the form key=value.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ol>
+     * <li>As a string where key-value pairs are separated using either # or ; characters:
+     * <blockquote><pre>windowsService.environment='envKey1=value1;envKey2=value2'</pre></blockquote>
+     * <li>As a map:
+     * <blockquote><pre>windowsService.environment=['key1': 'value1', 'key2': 'value2']</pre></blockquote>
+     * </ol>
+     * </p>
+     *
+     * Note: If you use the first option and you need to embed either # or ; character within a value put them inside single quotes.
      */
     @Input
     @Optional
@@ -128,8 +168,19 @@ class WindowsServicePluginConfiguration {
     String jvm = 'auto'
 
     /**
-     * List of options in the form of -D or -X that will be passed to the JVM. The options are separated using
-     * either # or ; characters. if you need to embed either # or ; character put them inside single quotes.
+     * List of options in the form of -D or -X that will be passed to the JVM.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ol>
+     * <li>As a string where parameters are separated using either # or ; character:
+     * <blockquote><pre>windowsService.jvmOptions='jvmOption1;jvmOption2'</pre></blockquote>
+     * <li>As a list:
+     * <blockquote><pre>windowsService.jvmOptions=['jvmOption1', 'jvmOption2']</pre></blockquote>
+     * </ol>
+     * </p>
+     *
+     * Note: If you use the first option and you need to embed either # or ; character within a value put them inside single quotes.
      */
     @Input
     @Optional
@@ -137,8 +188,18 @@ class WindowsServicePluginConfiguration {
 
     /**
      * List of options in the form of -D or -X that will be passed to the JVM when running on Java 9 or later.
-     * The options are separated using either # or ; characters. If you need to embed either # or ; character put them
-     * inside single quotes.
+     *
+     * <p>
+     * This field could be set in two ways:
+     * <ol>
+     * <li>As a string where parameters are separated using either # or ; character:
+     * <blockquote><pre>windowsService.jvmOptions9='jvmOption1;jvmOption2'</pre></blockquote>
+     * <li>As a list:
+     * <blockquote><pre>windowsService.jvmOptions9=['jvmOption1', 'jvmOption2']</pre></blockquote>
+     * </ol>
+     * </p>
+     *
+     * Note: If you use the first option and you need to embed either # or ; character within a value put them inside single quotes.
      */
     @Input
     @Optional
@@ -231,5 +292,21 @@ class WindowsServicePluginConfiguration {
     @InputFiles
     @Optional
     FileCollection overridingClasspath
+
+    /**
+     * Specifies the name of the account under which the service should run. Use an account name in the form
+     * DomainName\UserName. The service process will be logged on as this user. if the account belongs to the built-in
+     * domain, you can specify .\UserName.
+     */
+    @Input
+    @Optional
+    String serviceUser
+
+    /**
+     * Password for user account set by serviceUser parameter.
+     */
+    @Input
+    @Optional
+    String servicePassword
 
 }
